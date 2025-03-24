@@ -60,10 +60,14 @@ const BackgroundAnimation: React.FC = () => {
       const gradient = ctx.createLinearGradient(0, 0, canvas.width, canvas.height);
       
       if (theme === 'dark') {
+        // Dark theme gradient
         gradient.addColorStop(0, '#0f172a');
-        gradient.addColorStop(1, '#1e293b');
+        gradient.addColorStop(0.5, '#1e293b');
+        gradient.addColorStop(1, '#111827');
       } else {
+        // Light theme gradient
         gradient.addColorStop(0, '#f8fafc');
+        gradient.addColorStop(0.5, '#e2e8f0');
         gradient.addColorStop(1, '#f1f5f9');
       }
       
@@ -133,6 +137,26 @@ const BackgroundAnimation: React.FC = () => {
             ctx.stroke();
           }
         }
+      }
+      
+      // Add subtle glow effects
+      for (let i = 0; i < 5; i++) {
+        const x = Math.random() * canvas.width;
+        const y = Math.random() * canvas.height;
+        const radius = Math.random() * 100 + 50;
+        
+        const glow = ctx.createRadialGradient(x, y, 0, x, y, radius);
+        
+        if (theme === 'dark') {
+          glow.addColorStop(0, 'rgba(79, 70, 229, 0.03)');
+          glow.addColorStop(1, 'rgba(79, 70, 229, 0)');
+        } else {
+          glow.addColorStop(0, 'rgba(147, 197, 253, 0.03)');
+          glow.addColorStop(1, 'rgba(147, 197, 253, 0)');
+        }
+        
+        ctx.fillStyle = glow;
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
       }
       
       animationRef.current = requestAnimationFrame(draw);
