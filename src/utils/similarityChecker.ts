@@ -16,28 +16,61 @@ export interface FileComparisonResult {
   matchedPhrases: string[];
 }
 
-// Improved tokenization function with better handling for code and text
-const tokenize = (text: string): string[] => {
-  // Remove comments for code files (both // and /* */ style)
-  const withoutComments = text
-    .replace(/\/\/.*$/gm, '')
-    .replace(/\/\*[\s\S]*?\*\//g, '');
-    
-  return withoutComments
-    .toLowerCase()
-    .replace(/[^\w\s]/g, ' ')
-    .split(/\s+/)
-    .filter(word => word.length > 0);
+export interface GroupedResults {
+  group: string;
+  comparisons: FileComparisonResult[];
+}
+
+// Enhanced tokenization with programming language awareness
+const tokenize = (text: string, fileType: string): string[] => {
+  // Remove comments for code files based on language
+  let withoutComments = text;
+  
+  // Language-specific comment removal
+  if (['JavaScript', 'TypeScript', 'Java', 'C', 'C++', 'C#', 'Go', 'Swift', 'Kotlin', 'PHP', 'Rust'].includes(fileType)) {
+    // Remove // and /* */ style comments
+    withoutComments = text
+      .replace(/\/\/.*$/gm, '')
+      .replace(/\/\*[\s\S]*?\*\//g, '');
+  } else if (['Python', 'Ruby', 'R', 'Julia', 'Perl'].includes(fileType)) {
+    // Remove # style comments
+    withoutComments = text.replace(/#.*$/gm, '');
+  } else if (['HTML', 'XML', 'SVG'].includes(fileType)) {
+    // Remove <!-- --> style comments
+    withoutComments = text.replace(/<!--[\s\S]*?-->/g, '');
+  } else if (['SQL'].includes(fileType)) {
+    // Remove -- and /* */ style comments
+    withoutComments = text
+      .replace(/--.*$/gm, '')
+      .replace(/\/\*[\s\S]*?\*\//g, '');
+  }
+  
+  // Process based on file type
+  if (['Text', 'Markdown', 'Word', 'PDF', 'Rich Text'].includes(fileType)) {
+    // For text files, do more natural language processing
+    return withoutComments
+      .toLowerCase()
+      .replace(/[^\w\s]/g, ' ')
+      .split(/\s+/)
+      .filter(word => word.length > 2); // Filter out very short words
+  } else {
+    // For code files, preserve more structure but normalize whitespace
+    return withoutComments
+      .toLowerCase()
+      .replace(/\s+/g, ' ')
+      .split(/[\s{}();.,=:<>[\]]/g)
+      .filter(token => token.length > 0);
+  }
 };
 
-// Calculate similarity using a combined approach of Jaccard index and sequence matching
-const calculateSimilarity = (textA: string, textB: string): number => {
+// Calculate similarity using improved algorithm with language awareness
+const calculateSimilarity = (textA: string, typeA: string, textB: string, typeB: string): number => {
   // Handle empty files
   if (!textA.trim() && !textB.trim()) return 1; // Two empty files are considered identical
   if (!textA.trim() || !textB.trim()) return 0;
   
-  const tokensA = tokenize(textA);
-  const tokensB = tokenize(textB);
+  const tokensA = tokenize(textA, typeA);
+  const tokensB = tokenize(textB, typeB);
   
   // Calculate Jaccard similarity (set-based)
   const setA = new Set(tokensA);
@@ -51,8 +84,14 @@ const calculateSimilarity = (textA: string, textB: string): number => {
   // Calculate sequence-based similarity (for detecting code blocks)
   const sequenceSimilarity = calculateSequenceSimilarity(tokensA, tokensB);
   
-  // Weight the two similarity measures (favoring sequence similarity for code detection)
-  return 0.4 * jaccardSimilarity + 0.6 * sequenceSimilarity;
+  // Weight the two similarity measures based on file types
+  const isCode = !['Text', 'Markdown', 'Word', 'PDF', 'Rich Text'].includes(typeA) || 
+                !['Text', 'Markdown', 'Word', 'PDF', 'Rich Text'].includes(typeB);
+  
+  // Favor sequence matching for code files
+  return isCode 
+    ? 0.3 * jaccardSimilarity + 0.7 * sequenceSimilarity 
+    : 0.6 * jaccardSimilarity + 0.4 * sequenceSimilarity;
 };
 
 // Helper function to calculate sequence-based similarity
@@ -70,10 +109,10 @@ const calculateSequenceSimilarity = (tokensA: string[], tokensB: string[]): numb
 };
 
 // Find matching phrases with improved algorithm for code detection
-const findMatchingPhrases = (textA: string, textB: string, minLength: number = 4): string[] => {
+const findMatchingPhrases = (textA: string, typeA: string, textB: string, typeB: string, minLength: number = 4): string[] => {
   const matches: string[] = [];
-  const tokensA = tokenize(textA);
-  const tokensB = tokenize(textB);
+  const tokensA = tokenize(textA, typeA);
+  const tokensB = tokenize(textB, typeB);
   
   const commonSequences = findLongestCommonSubsequences(tokensA, tokensB, minLength);
   
@@ -122,8 +161,8 @@ export const compareFiles = (files: FileInfo[]): FileComparisonResult[] => {
       const fileA = files[i];
       const fileB = files[j];
       
-      const similarityScore = calculateSimilarity(fileA.content, fileB.content);
-      const matchedPhrases = findMatchingPhrases(fileA.content, fileB.content);
+      const similarityScore = calculateSimilarity(fileA.content, fileA.type, fileB.content, fileB.type);
+      const matchedPhrases = findMatchingPhrases(fileA.content, fileA.type, fileB.content, fileB.type);
       
       results.push({
         id: `${fileA.id}-${fileB.id}`,
@@ -137,4 +176,27 @@ export const compareFiles = (files: FileInfo[]): FileComparisonResult[] => {
   
   // Sort by similarity score (descending)
   return results.sort((a, b) => b.similarityScore - a.similarityScore);
+};
+
+// Group results by file type pairs
+export const groupComparisonsByType = (results: FileComparisonResult[]): GroupedResults[] => {
+  const groupedMap = new Map<string, FileComparisonResult[]>();
+  
+  results.forEach(result => {
+    // Create a consistent group name regardless of order
+    const types = [result.fileA.type, result.fileB.type].sort();
+    const groupName = types[0] === types[1] ? types[0] : `${types[0]} & ${types[1]}`;
+    
+    if (!groupedMap.has(groupName)) {
+      groupedMap.set(groupName, []);
+    }
+    
+    groupedMap.get(groupName)?.push(result);
+  });
+  
+  // Convert map to array of groups
+  return Array.from(groupedMap.entries()).map(([group, comparisons]) => ({
+    group,
+    comparisons
+  }));
 };

@@ -1,11 +1,12 @@
 
 import React, { useState } from 'react';
 import { FileInfo } from '../utils/fileProcessor';
-import { FileComparisonResult, compareFiles } from '../utils/similarityChecker';
+import { FileComparisonResult, compareFiles, groupComparisonsByType, GroupedResults } from '../utils/similarityChecker';
 import ResultsTable from './ResultsTable';
 import ResultsChart from './ResultsChart';
-import { AlertTriangle, X, FileText, Maximize2, Minimize2, Loader2 } from 'lucide-react';
+import { AlertTriangle, X, FileText, Maximize2, Minimize2, Loader2, BarChart, PieChart, Layers } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import FloatingCard from './FloatingCard';
 
 interface ResultsSectionProps {
@@ -14,10 +15,12 @@ interface ResultsSectionProps {
 
 const ResultsSection: React.FC<ResultsSectionProps> = ({ files }) => {
   const [results, setResults] = useState<FileComparisonResult[]>([]);
+  const [groupedResults, setGroupedResults] = useState<GroupedResults[]>([]);
   const [selectedResult, setSelectedResult] = useState<FileComparisonResult | null>(null);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [expanded, setExpanded] = useState(false);
+  const [activeGroup, setActiveGroup] = useState<string | null>(null);
   
   const handleAnalyze = () => {
     if (files.length < 2) return;
@@ -29,6 +32,15 @@ const ResultsSection: React.FC<ResultsSectionProps> = ({ files }) => {
       try {
         const comparisonResults = compareFiles(files);
         setResults(comparisonResults);
+        
+        // Group results by file type
+        const grouped = groupComparisonsByType(comparisonResults);
+        setGroupedResults(grouped);
+        
+        // Set active group to the first one if any exist
+        if (grouped.length > 0) {
+          setActiveGroup(grouped[0].group);
+        }
       } catch (error) {
         console.error("Error analyzing files:", error);
       } finally {
@@ -55,6 +67,10 @@ const ResultsSection: React.FC<ResultsSectionProps> = ({ files }) => {
       </FloatingCard>
     );
   }
+  
+  const filteredResults = activeGroup 
+    ? groupedResults.find(group => group.group === activeGroup)?.comparisons || [] 
+    : results;
   
   return (
     <div className="w-full animate-fade-in">
@@ -101,8 +117,45 @@ const ResultsSection: React.FC<ResultsSectionProps> = ({ files }) => {
               </div>
             )}
             
+            {groupedResults.length > 0 && (
+              <FloatingCard className="p-4" delay={0.15}>
+                <div className="flex items-center mb-4">
+                  <Layers className="h-5 w-5 mr-2 text-primary" />
+                  <h3 className="font-medium">File Type Groups</h3>
+                </div>
+                
+                <div className="flex flex-wrap gap-2">
+                  {groupedResults.map((group) => (
+                    <button
+                      key={group.group}
+                      className={`px-3 py-1.5 rounded-full text-xs font-medium transition-colors ${
+                        activeGroup === group.group 
+                          ? 'bg-primary text-primary-foreground' 
+                          : 'bg-secondary/50 hover:bg-secondary/80 text-secondary-foreground'
+                      }`}
+                      onClick={() => setActiveGroup(group.group)}
+                    >
+                      {group.group} ({group.comparisons.length})
+                    </button>
+                  ))}
+                  {activeGroup && (
+                    <button
+                      className="px-3 py-1.5 rounded-full text-xs font-medium bg-secondary/30 hover:bg-secondary/50 text-secondary-foreground transition-colors"
+                      onClick={() => setActiveGroup(null)}
+                    >
+                      Show All
+                    </button>
+                  )}
+                </div>
+              </FloatingCard>
+            )}
+            
             <FloatingCard delay={0.2}>
-              <ResultsTable results={results} onSelectResult={handleSelectResult} />
+              <ResultsTable 
+                results={filteredResults} 
+                onSelectResult={handleSelectResult}
+                activeGroup={activeGroup}
+              />
             </FloatingCard>
           </div>
           

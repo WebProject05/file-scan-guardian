@@ -1,17 +1,18 @@
 
 import React, { useState } from 'react';
 import { FileComparisonResult } from '../utils/similarityChecker';
-import { ChevronDown, ChevronUp, ExternalLink, AlertTriangle } from 'lucide-react';
+import { ChevronDown, ChevronUp, ExternalLink, AlertTriangle, Zap } from 'lucide-react';
 
 interface ResultsTableProps {
   results: FileComparisonResult[];
   onSelectResult: (result: FileComparisonResult) => void;
+  activeGroup?: string | null;
 }
 
 type SortKey = 'score' | 'nameA' | 'nameB' | 'typeA' | 'typeB';
 type SortDirection = 'asc' | 'desc';
 
-const ResultsTable: React.FC<ResultsTableProps> = ({ results, onSelectResult }) => {
+const ResultsTable: React.FC<ResultsTableProps> = ({ results, onSelectResult, activeGroup }) => {
   const [sortKey, setSortKey] = useState<SortKey>('score');
   const [sortDirection, setSortDirection] = useState<SortDirection>('desc');
   
@@ -81,7 +82,9 @@ const ResultsTable: React.FC<ResultsTableProps> = ({ results, onSelectResult }) 
         </div>
         <h3 className="text-lg font-medium mb-2">No Results</h3>
         <p className="text-muted-foreground">
-          Upload two or more files to see similarity comparisons
+          {activeGroup 
+            ? `No comparisons found for ${activeGroup} files` 
+            : 'Upload two or more files to see similarity comparisons'}
         </p>
       </div>
     );
@@ -89,6 +92,14 @@ const ResultsTable: React.FC<ResultsTableProps> = ({ results, onSelectResult }) 
   
   return (
     <div className="w-full overflow-x-auto">
+      <div className="px-4 py-3 flex items-center justify-between">
+        <h3 className="font-medium">
+          {activeGroup ? `${activeGroup} Comparisons` : 'All Comparisons'}  
+          <span className="ml-2 text-xs rounded-full bg-secondary/50 px-2 py-0.5">
+            {results.length}
+          </span>
+        </h3>
+      </div>
       <table className="w-full border-collapse">
         <thead>
           <tr className="border-b border-border">
@@ -152,6 +163,7 @@ const ResultsTable: React.FC<ResultsTableProps> = ({ results, onSelectResult }) 
               <td className="px-4 py-3">
                 <div className={`inline-flex items-center px-2.5 py-1 rounded-full font-medium text-xs ${getSeverityColor(result.similarityScore)}`}>
                   {formatSimilarityPercentage(result.similarityScore)}
+                  {result.similarityScore >= 0.8 && <Zap className="ml-1 w-3 h-3" />}
                 </div>
               </td>
               <td className="px-4 py-3 font-medium truncate max-w-[150px]">

@@ -1,4 +1,3 @@
-
 export interface FileInfo {
   id: string;
   name: string;
@@ -38,29 +37,100 @@ export const processFile = async (file: File): Promise<FileInfo> => {
 const getFileType = (file: File): string => {
   const extension = file.name.split('.').pop()?.toLowerCase() || '';
   
-  // Map common extensions to more readable types
+  // Expanded list of programming languages and file types
   const extensionMap: Record<string, string> = {
+    // Text and document formats
     'txt': 'Text',
     'doc': 'Word',
     'docx': 'Word',
     'pdf': 'PDF',
-    'py': 'Python',
+    'md': 'Markdown',
+    'rtf': 'Rich Text',
+    'odt': 'OpenDocument',
+    
+    // Web languages
+    'html': 'HTML',
+    'htm': 'HTML',
+    'css': 'CSS',
+    'scss': 'SASS',
+    'less': 'LESS',
     'js': 'JavaScript',
+    'jsx': 'React',
     'ts': 'TypeScript',
     'tsx': 'React',
-    'jsx': 'React',
-    'html': 'HTML',
-    'css': 'CSS',
-    'java': 'Java',
-    'c': 'C',
-    'cpp': 'C++',
-    'cs': 'C#',
-    'rb': 'Ruby',
-    'php': 'PHP',
-    'md': 'Markdown',
     'json': 'JSON',
     'xml': 'XML',
+    'svg': 'SVG',
+    
+    // Backend languages
+    'py': 'Python',
+    'rb': 'Ruby',
+    'php': 'PHP',
+    'java': 'Java',
+    'c': 'C',
+    'h': 'C Header',
+    'cpp': 'C++',
+    'hpp': 'C++ Header',
+    'cs': 'C#',
+    'go': 'Go',
+    'rs': 'Rust',
+    'swift': 'Swift',
+    'kt': 'Kotlin',
+    'scala': 'Scala',
+    'pl': 'Perl',
+    'pm': 'Perl Module',
+    'hs': 'Haskell',
+    'lua': 'Lua',
+    'r': 'R',
+    'dart': 'Dart',
+    
+    // Database and config
+    'sql': 'SQL',
+    'yml': 'YAML',
+    'yaml': 'YAML',
+    'toml': 'TOML',
+    'ini': 'INI',
+    'env': 'Environment',
+    'config': 'Config',
+    
+    // Shell scripts
+    'sh': 'Shell',
+    'bash': 'Bash',
+    'ps1': 'PowerShell',
+    'bat': 'Batch',
+    
+    // Other formats
     'csv': 'CSV',
+    'tsv': 'TSV',
+    'jsx': 'React',
+    'vue': 'Vue',
+    'svelte': 'Svelte',
+    'elm': 'Elm',
+    'clj': 'Clojure',
+    'ex': 'Elixir',
+    'exs': 'Elixir Script',
+    'fs': 'F#',
+    'erl': 'Erlang',
+    'coffee': 'CoffeeScript',
+    'groovy': 'Groovy',
+    'jl': 'Julia',
+    'f': 'Fortran',
+    'f90': 'Fortran 90',
+    'f95': 'Fortran 95',
+    'asm': 'Assembly',
+    'bf': 'Brainfuck',
+    'ml': 'OCaml',
+    'lisp': 'Lisp',
+    'd': 'D',
+    'v': 'Verilog',
+    'vhd': 'VHDL',
+    'proto': 'Protocol Buffers',
+    'graphql': 'GraphQL',
+    'ipynb': 'Jupyter Notebook',
+    'rmd': 'R Markdown',
+    'nim': 'Nim',
+    'zig': 'Zig',
+    'cr': 'Crystal',
   };
   
   return extensionMap[extension] || 'Unknown';
