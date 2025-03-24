@@ -28,16 +28,18 @@ const FloatingCard: React.FC<FloatingCardProps> = ({
     >
       {children}
       
-      <style jsx>{`
-        @keyframes floatingAnimation {
-          0%, 100% {
-            transform: translateY(0px);
+      <style dangerouslySetInnerHTML={{
+        __html: `
+          @keyframes floatingAnimation {
+            0%, 100% {
+              transform: translateY(0px);
+            }
+            50% {
+              transform: translateY(-10px);
+            }
           }
-          50% {
-            transform: translateY(-10px);
-          }
-        }
-      `}</style>
+        `
+      }} />
     </div>
   );
 };

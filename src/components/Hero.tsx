@@ -12,7 +12,7 @@ const Hero: React.FC = () => {
         </div>
         
         <h1 className="text-4xl font-bold tracking-tight sm:text-5xl md:text-6xl mb-6">
-          File Scan Guardian
+          ScanSafe
         </h1>
         
         <p className="text-xl text-muted-foreground mb-8 max-w-2xl mx-auto">
