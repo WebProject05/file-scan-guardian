@@ -8,6 +8,8 @@ import ResultsSection from '../components/ResultsSection';
 import { FileInfo } from '../utils/fileProcessor';
 import { Separator } from '@/components/ui/separator';
 import { Github } from 'lucide-react';
+import BackgroundAnimation from '../components/BackgroundAnimation';
+import FloatingCard from '../components/FloatingCard';
 
 const Index: React.FC = () => {
   const [files, setFiles] = useState<FileInfo[]>([]);
@@ -19,14 +21,15 @@ const Index: React.FC = () => {
   return (
     <ThemeProvider>
       <div className="min-h-screen bg-background text-foreground theme-transition">
+        <BackgroundAnimation />
         <ThemeToggle />
         
-        <header>
+        <header className="relative z-10">
           <Hero />
         </header>
         
-        <main className="container-custom pb-24">
-          <section className="glass-card rounded-xl p-8 md:p-10 max-w-4xl mx-auto">
+        <main className="container-custom pb-24 relative z-10">
+          <FloatingCard className="rounded-xl p-8 md:p-10 max-w-4xl mx-auto">
             <h2 className="text-2xl font-semibold mb-6 text-center">
               Upload Files for Analysis
             </h2>
@@ -39,10 +42,10 @@ const Index: React.FC = () => {
                 <ResultsSection files={files} />
               </>
             )}
-          </section>
+          </FloatingCard>
         </main>
         
-        <footer className="py-8 border-t border-border">
+        <footer className="py-8 border-t border-border relative z-10">
           <div className="container-custom">
             <div className="flex flex-col md:flex-row justify-between items-center">
               <p className="text-muted-foreground text-sm mb-4 md:mb-0">

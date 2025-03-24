@@ -16,70 +16,113 @@ export interface FileComparisonResult {
   matchedPhrases: string[];
 }
 
-// Simple tokenization function
+// Improved tokenization function with better handling for code and text
 const tokenize = (text: string): string[] => {
-  return text
+  // Remove comments for code files (both // and /* */ style)
+  const withoutComments = text
+    .replace(/\/\/.*$/gm, '')
+    .replace(/\/\*[\s\S]*?\*\//g, '');
+    
+  return withoutComments
     .toLowerCase()
     .replace(/[^\w\s]/g, ' ')
     .split(/\s+/)
     .filter(word => word.length > 0);
 };
 
-// Calculate similarity using Jaccard index (for demo purposes)
-const calculateJaccardSimilarity = (textA: string, textB: string): number => {
-  const tokensA = new Set(tokenize(textA));
-  const tokensB = new Set(tokenize(textB));
+// Calculate similarity using a combined approach of Jaccard index and sequence matching
+const calculateSimilarity = (textA: string, textB: string): number => {
+  // Handle empty files
+  if (!textA.trim() && !textB.trim()) return 1; // Two empty files are considered identical
+  if (!textA.trim() || !textB.trim()) return 0;
   
-  if (tokensA.size === 0 && tokensB.size === 0) return 0;
+  const tokensA = tokenize(textA);
+  const tokensB = tokenize(textB);
   
-  const intersection = new Set([...tokensA].filter(x => tokensB.has(x)));
-  const union = new Set([...tokensA, ...tokensB]);
+  // Calculate Jaccard similarity (set-based)
+  const setA = new Set(tokensA);
+  const setB = new Set(tokensB);
   
-  return intersection.size / union.size;
+  const intersection = new Set([...setA].filter(x => setB.has(x)));
+  const union = new Set([...setA, ...setB]);
+  
+  const jaccardSimilarity = intersection.size / union.size;
+  
+  // Calculate sequence-based similarity (for detecting code blocks)
+  const sequenceSimilarity = calculateSequenceSimilarity(tokensA, tokensB);
+  
+  // Weight the two similarity measures (favoring sequence similarity for code detection)
+  return 0.4 * jaccardSimilarity + 0.6 * sequenceSimilarity;
 };
 
-// Find matching phrases (simple implementation for demo)
-const findMatchingPhrases = (textA: string, textB: string, minLength: number = 5): string[] => {
-  const matches: string[] = [];
-  const wordsA = tokenize(textA);
-  const wordsB = tokenize(textB);
+// Helper function to calculate sequence-based similarity
+const calculateSequenceSimilarity = (tokensA: string[], tokensB: string[]): number => {
+  const matches = findLongestCommonSubsequences(tokensA, tokensB, 3);
   
-  for (let i = 0; i <= wordsA.length - minLength; i++) {
-    for (let j = 0; j <= wordsB.length - minLength; j++) {
-      let matchLength = 0;
-      
-      while (
-        i + matchLength < wordsA.length &&
-        j + matchLength < wordsB.length &&
-        wordsA[i + matchLength] === wordsB[j + matchLength]
-      ) {
-        matchLength++;
-      }
-      
-      if (matchLength >= minLength) {
-        const phrase = wordsA.slice(i, i + matchLength).join(' ');
-        if (!matches.includes(phrase)) {
-          matches.push(phrase);
+  // Calculate the total length of matched sequences
+  const totalMatchLength = matches.reduce((sum, seq) => sum + seq.length, 0);
+  
+  // Calculate the proportion of matched content
+  const maxLength = Math.max(tokensA.length, tokensB.length);
+  if (maxLength === 0) return 0;
+  
+  return Math.min(1, totalMatchLength / maxLength);
+};
+
+// Find matching phrases with improved algorithm for code detection
+const findMatchingPhrases = (textA: string, textB: string, minLength: number = 4): string[] => {
+  const matches: string[] = [];
+  const tokensA = tokenize(textA);
+  const tokensB = tokenize(textB);
+  
+  const commonSequences = findLongestCommonSubsequences(tokensA, tokensB, minLength);
+  
+  // Convert token sequences back to phrases
+  return commonSequences
+    .map(sequence => sequence.join(' '))
+    .slice(0, 5); // Limit to top 5 matches for UI display
+};
+
+// Find all common subsequences of at least minLength
+const findLongestCommonSubsequences = (tokensA: string[], tokensB: string[], minLength: number): string[][] => {
+  const sequences: string[][] = [];
+  
+  for (let i = 0; i < tokensA.length; i++) {
+    for (let j = 0; j < tokensB.length; j++) {
+      if (tokensA[i] === tokensB[j]) {
+        // Found a match, try to extend it
+        let matchLength = 1;
+        while (
+          i + matchLength < tokensA.length &&
+          j + matchLength < tokensB.length &&
+          tokensA[i + matchLength] === tokensB[j + matchLength]
+        ) {
+          matchLength++;
         }
-        i += matchLength - 1;
-        break;
+        
+        if (matchLength >= minLength) {
+          sequences.push(tokensA.slice(i, i + matchLength));
+          i += matchLength - 1; // Skip ahead
+          break;
+        }
       }
     }
   }
   
-  return matches.slice(0, 5); // Limit to top 5 matches for simplicity
+  // Sort by length (descending)
+  return sequences.sort((a, b) => b.length - a.length);
 };
 
 export const compareFiles = (files: FileInfo[]): FileComparisonResult[] => {
   const results: FileComparisonResult[] = [];
   
-  // Compare each file with every other file (n^2 complexity)
+  // Compare each file with every other file
   for (let i = 0; i < files.length; i++) {
     for (let j = i + 1; j < files.length; j++) {
       const fileA = files[i];
       const fileB = files[j];
       
-      const similarityScore = calculateJaccardSimilarity(fileA.content, fileB.content);
+      const similarityScore = calculateSimilarity(fileA.content, fileB.content);
       const matchedPhrases = findMatchingPhrases(fileA.content, fileB.content);
       
       results.push({

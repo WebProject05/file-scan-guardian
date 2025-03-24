@@ -108,7 +108,7 @@
   }
 }
 
-/* Custom animations */
+/* Enhanced animations */
 .slide-in-bottom {
   animation: slideInBottom 0.5s ease-out both;
 }
@@ -139,6 +139,15 @@
   }
 }
 
+@keyframes float {
+  0%, 100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-10px);
+  }
+}
+
 /* File uploader styling */
 .file-drop-area {
   @apply relative border-2 border-dashed border-border rounded-lg p-12 transition-all duration-300 ease-in-out text-center;
@@ -155,4 +164,33 @@
 /* Smooth transitions */
 .theme-transition {
   @apply transition-all duration-300 ease-in-out;
+}
+
+/* Enhanced animations */
+@keyframes pulse-subtle {
+  0%, 100% {
+    opacity: 0.7;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.3;
+    transform: scale(0.95);
+  }
+}
+
+.animate-pulse-subtle {
+  animation: pulse-subtle 4s ease-in-out infinite;
+}
+
+@keyframes floating {
+  0%, 100% {
+    transform: translateY(0px);
+  }
+  50% {
+    transform: translateY(-10px);
+  }
+}
+
+.animate-floating {
+  animation: floating 6s ease-in-out infinite;
 }

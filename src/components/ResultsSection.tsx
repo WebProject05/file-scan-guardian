@@ -4,8 +4,9 @@ import { FileInfo } from '../utils/fileProcessor';
 import { FileComparisonResult, compareFiles } from '../utils/similarityChecker';
 import ResultsTable from './ResultsTable';
 import ResultsChart from './ResultsChart';
-import { AlertTriangle, X, FileText, Maximize2, Minimize2 } from 'lucide-react';
+import { AlertTriangle, X, FileText, Maximize2, Minimize2, Loader2 } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
+import FloatingCard from './FloatingCard';
 
 interface ResultsSectionProps {
   files: FileInfo[];
@@ -23,12 +24,17 @@ const ResultsSection: React.FC<ResultsSectionProps> = ({ files }) => {
     
     setIsAnalyzing(true);
     
-    // Simulate processing delay for better UX
+    // Use setTimeout to avoid UI freezing during calculation
     setTimeout(() => {
-      const comparisonResults = compareFiles(files);
-      setResults(comparisonResults);
-      setIsAnalyzing(false);
-    }, 1500);
+      try {
+        const comparisonResults = compareFiles(files);
+        setResults(comparisonResults);
+      } catch (error) {
+        console.error("Error analyzing files:", error);
+      } finally {
+        setIsAnalyzing(false);
+      }
+    }, 100);
   };
   
   const handleSelectResult = (result: FileComparisonResult) => {
@@ -38,7 +44,7 @@ const ResultsSection: React.FC<ResultsSectionProps> = ({ files }) => {
   
   if (files.length < 2) {
     return (
-      <div className="bg-muted/30 rounded-lg p-8 text-center animate-fade-in">
+      <FloatingCard className="bg-muted/30 p-8 text-center animate-fade-in">
         <div className="flex justify-center mb-4">
           <AlertTriangle className="h-10 w-10 text-muted-foreground" />
         </div>
@@ -46,29 +52,33 @@ const ResultsSection: React.FC<ResultsSectionProps> = ({ files }) => {
         <p className="text-muted-foreground">
           Please upload at least two files to run a plagiarism check
         </p>
-      </div>
+      </FloatingCard>
     );
   }
   
   return (
     <div className="w-full animate-fade-in">
       {results.length === 0 ? (
-        <div className="text-center">
+        <FloatingCard className="p-8 text-center" delay={0.2}>
           <button
-            className="inline-flex items-center justify-center rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 bg-primary text-primary-foreground hover:bg-primary/90 h-10 px-8 py-6"
+            className="inline-flex items-center justify-center rounded-md text-sm font-medium 
+                      ring-offset-background transition-colors focus-visible:outline-none 
+                      focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 
+                      disabled:pointer-events-none disabled:opacity-50 bg-primary 
+                      text-primary-foreground hover:bg-primary/90 h-10 px-8 py-6"
             onClick={handleAnalyze}
             disabled={isAnalyzing}
           >
             {isAnalyzing ? (
               <>
-                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-primary-foreground mr-2"></div>
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                 Analyzing...
               </>
             ) : (
               'Start Plagiarism Check'
             )}
           </button>
-        </div>
+        </FloatingCard>
       ) : (
         <div className="space-y-6">
           <div className="flex items-center justify-between">
@@ -85,18 +95,24 @@ const ResultsSection: React.FC<ResultsSectionProps> = ({ files }) => {
           <div className="space-y-8">
             {expanded && (
               <div className="animate-slide-down">
-                <ResultsChart results={results} />
+                <FloatingCard delay={0.1}>
+                  <ResultsChart results={results} />
+                </FloatingCard>
               </div>
             )}
             
-            <div className="bg-background rounded-lg border border-border/50 overflow-hidden">
+            <FloatingCard delay={0.2}>
               <ResultsTable results={results} onSelectResult={handleSelectResult} />
-            </div>
+            </FloatingCard>
           </div>
           
           <div className="text-center pt-4">
             <button
-              className="inline-flex items-center justify-center rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 bg-secondary text-secondary-foreground hover:bg-secondary/80 h-9 px-4 py-2"
+              className="inline-flex items-center justify-center rounded-md text-sm font-medium 
+                        ring-offset-background transition-colors focus-visible:outline-none 
+                        focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 
+                        disabled:pointer-events-none disabled:opacity-50 bg-secondary 
+                        text-secondary-foreground hover:bg-secondary/80 h-9 px-4 py-2"
               onClick={handleAnalyze}
             >
               Re-run Analysis
